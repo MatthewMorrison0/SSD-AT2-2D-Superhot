@@ -2,6 +2,7 @@ import pygame
 import math
 import copy
 import random
+from PIL import Image
 
 # Initialise pygame
 pygame.init()
@@ -102,23 +103,23 @@ class Gun:
 class Pistol(Gun):
     def __init__(self, position):
         self.position = position
-        self.size = 25
+        self.size = 40
         self.image = pygame.image.load("Pistol.png")
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
         self.fire_rate = 2
-        self.ammo = 20
-        self.max_ammo = 20
+        self.ammo = 10
+        self.max_ammo = 10
 
 # Class for AR(inherited from Gun class)
 class AR(Gun):
     def __init__(self, position):
         self.position = position
-        self.size = 75
+        self.size = 100
         self.image = pygame.image.load("AR.png")
         self.image = pygame.transform.scale(self.image, (self.size, self.size))
         self.fire_rate = 1
-        self.ammo = 10
-        self.max_ammo = 10
+        self.ammo = 20
+        self.max_ammo = 20
 
 # Class for enemy
 class Enemy:
@@ -127,7 +128,7 @@ class Enemy:
         self.shoot_cooldown = 0
         self.position = position
         self.rotation = 0
-        self.hitbox = pygame.Rect((position[0] - 10, position[1] - 10), (20, 20))
+        self.hitbox = pygame.Rect((position[0] - 20, position[1] - 20), (20, 20))
         self.bullets = []
         self.walk_amount = 0
         self.rot_amount = 0
@@ -139,39 +140,46 @@ class Enemy:
         self.bullets.append(global_bullets[-1])
 
     def draw(self):  # Draw enemy
-        pygame.draw.circle(window, (200, 0, 0), (self.position[0], self.position[1]), 15)
+        pygame.draw.circle(window, (200, 0, 0), (self.position[0], self.position[1]), 20)
         pygame.draw.circle(window, (0, 0, 0),
                            (14 * math.sin(self.rotation) + self.position[0], 14 * math.cos(self.rotation) + self.position[1]), 2)
-    
-    def canSeePlayer(self, obstacle): # Can the enemy see the player?
-        self.seePlayer = True
-        if self.position[0] - playerPos[0] != 0:
-            lineGradient = (self.position[1] - playerPos[1]) / (self.position[0] - playerPos[0])
-            lineC = self.position[1] - (self.position[0] * lineGradient)
-            intersectionPoint1 = obstacle.getVertices()[0][0] * lineGradient + lineC
-            intersectionPoint2 = obstacle.getVertices()[2][0] * lineGradient + lineC
-            intersectionPoint3 = (obstacle.getVertices()[1][1] - lineC) / lineGradient
-            intersectionPoint4 = (obstacle.getVertices()[0][1] - lineC) / lineGradient
-            if playerPos[0] >= self.position[0]:
-                rotation = 1.57 - math.atan(lineGradient)
-            else:
-                rotation = 4.71 - math.atan(lineGradient)
 
-            if intersectionPoint1 >= obstacle.getVertices()[0][1] and intersectionPoint1 <= obstacle.getVertices()[1][1] and not ((intersectionPoint1 <= self.position[1] and intersectionPoint1 <= playerPos[1]) or (intersectionPoint1 >= self.position[1] and intersectionPoint1 >= playerPos[1])):
-                self.seePlayer = False
-                return rotation
-            if intersectionPoint2 >= obstacle.getVertices()[2][1] and intersectionPoint2 <= obstacle.getVertices()[3][1] and not ((intersectionPoint2 <= self.position[1] and intersectionPoint2 <= playerPos[1]) or (intersectionPoint2 >= self.position[1] and intersectionPoint2 >= playerPos[1])):
-                self.seePlayer = False
-                return rotation
-            if intersectionPoint3 >= obstacle.getVertices()[1][0] and intersectionPoint3 <= obstacle.getVertices()[3][0] and not ((intersectionPoint3 <= self.position[0] and intersectionPoint3 <= playerPos[0]) or (intersectionPoint3 >= self.position[0] and intersectionPoint3 >= playerPos[0])):
-                self.seePlayer = False
-                return rotation
-            if intersectionPoint4 >= obstacle.getVertices()[0][0] and intersectionPoint4 <= obstacle.getVertices()[2][0] and not ((intersectionPoint4 <= self.position[0] and intersectionPoint4 <= playerPos[0]) or (intersectionPoint4 >= self.position[0] and intersectionPoint4 >= playerPos[0])):
-                self.seePlayer = False
-                return rotation
-            if not (self.rotation - rotation < -5.49779 or self.rotation - rotation > -0.785398):
-                self.seePlayer = False
+    def canSeePlayer(self): # Can the enemy see the player?
+        self.seePlayer = True
+        global obstacles
+        for obstacle in obstacles:
+            if self.position[0] - playerPos[0] != 0 and self.position[1] - playerPos[1] != 0:
+                lineGradient = (self.position[1] - playerPos[1]) / (self.position[0] - playerPos[0])
+                lineC = self.position[1] - (self.position[0] * lineGradient)
+                intersectionPoint1 = obstacle.getVertices()[0][0] * lineGradient + lineC
+                intersectionPoint2 = obstacle.getVertices()[2][0] * lineGradient + lineC
+                intersectionPoint3 = (obstacle.getVertices()[1][1] - lineC) / lineGradient
+                intersectionPoint4 = (obstacle.getVertices()[0][1] - lineC) / lineGradient
+
+                if playerPos[0] >= self.position[0]:
+                    rotation = 1.57 - math.atan(lineGradient)
+                else:
+                    rotation = 4.71 - math.atan(lineGradient)
+
+                if intersectionPoint1 >= obstacle.getVertices()[0][1] and intersectionPoint1 <= obstacle.getVertices()[1][1] and not ((intersectionPoint1 <= self.position[1] and intersectionPoint1 <= playerPos[1]) or (intersectionPoint1 >= self.position[1] and intersectionPoint1 >= playerPos[1])):
+                    self.seePlayer = False
+                    return rotation
+                if intersectionPoint2 >= obstacle.getVertices()[2][1] and intersectionPoint2 <= obstacle.getVertices()[3][1] and not ((intersectionPoint2 <= self.position[1] and intersectionPoint2 <= playerPos[1]) or (intersectionPoint2 >= self.position[1] and intersectionPoint2 >= playerPos[1])):
+                    self.seePlayer = False
+                    return rotation
+                if intersectionPoint3 >= obstacle.getVertices()[1][0] and intersectionPoint3 <= obstacle.getVertices()[3][0] and not ((intersectionPoint3 <= self.position[0] and intersectionPoint3 <= playerPos[0]) or (intersectionPoint3 >= self.position[0] and intersectionPoint3 >= playerPos[0])):
+                    self.seePlayer = False
+                    return rotation
+                if intersectionPoint4 >= obstacle.getVertices()[0][0] and intersectionPoint4 <= obstacle.getVertices()[2][0] and not ((intersectionPoint4 <= self.position[0] and intersectionPoint4 <= playerPos[0]) or (intersectionPoint4 >= self.position[0] and intersectionPoint4 >= playerPos[0])):
+                    self.seePlayer = False
+                    return rotation
+                if not (self.rotation - rotation < -5.49779 or self.rotation - rotation > -0.785398):
+                    self.seePlayer = False
+
+            else:
+                return 0
         return rotation
+
 
     # Getters
     def getPosition(self):
@@ -201,6 +209,9 @@ class Enemy:
     def getSeePlayer(self):
         return self.seePlayer
 
+    def getRotDir(self):
+        return self.rot_dir
+
     # Setters
     def setPosition(self, position):
         self.position = position
@@ -225,6 +236,9 @@ class Enemy:
 
     def setSeePlayer(self, seeEnemy):
         self.seeEnemy = seeEnemy
+
+    def setRotDir(self, direction):
+        self.rot_dir = direction
 
 
 # Class for bullet
@@ -267,7 +281,7 @@ class Bullet:
 class Obstacle:
     def __init__(self, vertex, width, height):
         # Initialise obstacle variables
-        self.rect = pygame.Rect((vertex), (width, height))
+        self.rect = pygame.Rect(vertex, (width, height))
         self.colour = (0, 0, 0)
         self.vertices = [vertex, [vertex[0], vertex[1] + height], [vertex[0] + width, vertex[1]], [vertex[0] + width, vertex[1] + height]] # 0---2
                                                                                                                                            # |   |
@@ -291,22 +305,42 @@ class Obstacle:
 
 
 # Player data
-playerPos = [800, 501]
-playerPrevPos = [400, 100]
+playerPos = [300, 400]
+playerPrevPos = [1, 1]
 playerRot = 0
 playerPosChange = [0, 0]
 playerRotChange = 0
 timeScale = 1
 timeDecrease = False
 shootReady = 1
-player_hitbox = pygame.Rect((400, 100), (15, 15))
+player_hitbox = pygame.Rect((400, 100), (20, 20))
 player_gun_equipped = None
-crosshair = pygame.image.load("pixil-frame-0 (2).png")
+crosshair = pygame.image.load("Crosshair.png")
 
-obstacles = [Obstacle((500, 500), 100, 100)]
+obstacles = []
 global_bullets = []
-enemies = [Enemy([400, 500])]
-guns = [AR([100, 100]), Pistol([0, 0])]
+enemies = [Enemy([400, 500]), Enemy([200, 400]), Enemy([700, 300])]
+guns = [AR([100, 450]), Pistol([500, 400])]
+
+map = Image.open("Map.png")
+
+# Turn map image into obstacles
+pix = map.load()
+rect_status = False  # True = detecting a rect
+rect_start = 0
+for x in range(map.size[0]):
+    for y in range(map.size[1]):
+        if pix[x, y] == (0, 0, 0, 255) and not rect_status:
+            rect_start = y
+            rect_status = True
+        elif pix[x, y] == (255, 255, 255, 255) and rect_status:
+            obstacles.append(Obstacle(((x * (window.get_size()[0] / map.size[0])), (rect_start * (window.get_size()[1] / map.size[1]))), window.get_size()[0] / map.size[0], math.fabs(y - rect_start) * (window.get_size()[1] / map.size[1])))
+            rect_status = False
+        if y == map.size[1] - 1 and rect_status:
+            obstacles.append(Obstacle(((x * (window.get_size()[0] / map.size[0])), (rect_start * (window.get_size()[1] / map.size[1]))),window.get_size()[0] / map.size[0], math.fabs((y - rect_start) + 1) * (window.get_size()[1] / map.size[1])))
+            rect_status = False
+
+
 
 wPressed = False
 aPressed = False
@@ -364,7 +398,7 @@ while running:
     prevMouse = pygame.mouse.get_pressed()[0]
 
     for bullet in global_bullets:
-        bullet.setPosition((bullet.getPosition()[0] + math.sin(bullet.rotation) * 10 * timeScale, bullet.getPosition()[1] + math.cos(bullet.rotation) * 10 * timeScale))  # Updates position of bullet
+        bullet.setPosition((bullet.getPosition()[0] + math.sin(bullet.rotation) * 6 * timeScale, bullet.getPosition()[1] + math.cos(bullet.rotation) * 6 * timeScale))  # Updates position of bullet
         bullet.draw()  # Draws bullet
         if bullet.getPosition()[0] > window.get_size()[0] or bullet.getPosition()[0] < 0 or bullet.getPosition()[1] > \
                 window.get_size()[1] or bullet.getPosition()[1] < 0 or bullet.isCollision():  # Is the bullet outside of the screen or hit something?
@@ -386,26 +420,36 @@ while running:
             enemy.setHitbox(pygame.Rect((enemy.getPosition()[0] - 10, enemy.getPosition()[1] - 10), (20, 20)))
             enemy.setWalkAmount(enemy.getWalkAmount() - 1 * timeScale)
         if enemy.getRotAmount() > 0:
-            enemy.setRotation((enemy.getRotation() + 0.01) * timeScale)
+            enemy.setRotation((enemy.getRotation() + 0.01 * enemy.getRotDir()) * timeScale)
             enemy.setRotAmount((enemy.getRotAmount() - 0.1) * timeScale)
         if enemy.getRotation() > 6.28 or enemy.getRotation() < 0:
             enemy.setRotation(0)
         # Detects if the enemy can see the player through obstacles
+        rotation = enemy.canSeePlayer()
+        if not enemy.getSeePlayer():
+            if random.randint(0, 100) == 0:
+                enemy.setRotAmount(random.randint(1, 6))
+                if random.randint(1, 2) == 1:
+                    enemy.setRotDir(-1)
+                else:
+                    enemy.setRotDir(1)
+        else:
+            enemy.setRotAmount(0)
+            enemy.setRotation(rotation)
+            if random.randint(0, 50) == 0 and enemy.shoot_cooldown >= 5:  # Randomly shoots bullet
+                timeDecrease = True
+                enemy.shoot()
+                enemy.setShootCooldown(0)
+                if random.randint(1, 2) == 1:
+                    enemy.setRotDir(-1)
+                else:
+                    enemy.setRotDir(1)
+
         for obstacle in obstacles:
-            if obstacle.getRect().colliderect(enemy.getHitbox()) or window.get_size()[0] < enemy.getPosition()[0] or enemy.getPosition()[0] < 0 or window.get_size()[1] < enemy.getPosition()[1] or enemy.getPosition()[1] < 0:
+            if obstacle.getRect().colliderect(enemy.getHitbox()) or window.get_size()[0] < enemy.getPosition()[0] or enemy.getPosition()[0] < 0 or window.get_size()[1] < enemy.getPosition()[1] or enemy.getPosition()[1] < 0 and enemy.getRotAmount() <= 0:
                 enemy.setPosition(enemy.getPrevPos())
-                enemy.setRotAmount(random.randint(0, 3))
-            rotation = enemy.canSeePlayer(obstacle)
-            if not enemy.getSeePlayer():
-                if random.randint(0, 100) == 0:
-                    enemy.setRotAmount(random.randint(0, 3))
-            else:
-                enemy.setRotAmount(0)
-                enemy.setRotation(rotation)
-                if random.randint(0, 50) == 0 and enemy.shoot_cooldown >= 1:  # Randomly shoots bullet
-                    timeDecrease = True
-                    enemy.shoot()
-                    enemy.setShootCooldown(0)
+                enemy.setRotAmount(3)
+                enemy.setRotDir(1)
         enemy.setShootCooldown(enemy.getShootCooldown() + 0.1 * timeScale)  # Updates enemy shoot cooldown
         enemy.draw()  # Draws enemy
 
@@ -440,7 +484,7 @@ while running:
             window.blit(bullet_image_black, (50, 750))
         ammo_text = font.render(str(player_gun_equipped.getAmmo()), False, (0, 0, 0))
         window.blit(ammo_text, (90, 750))
-    pygame.draw.circle(window, (0, 0, 0), (playerPos[0], playerPos[1]), 15)  # Draw player
+    pygame.draw.circle(window, (0, 0, 0), (playerPos[0], playerPos[1]), 20)  # Draw player
     pygame.draw.circle(window, (255, 255, 255), (14 * math.sin(playerRot) + playerPos[0], 14 * math.cos(playerRot) + playerPos[1]), 2)
     window.blit(newCrosshair, (pygame.mouse.get_pos()[0] - crosshair.get_size()[0] / 2, pygame.mouse.get_pos()[1] - crosshair.get_size()[1] / 2))  # Draw crosshair
     pygame.display.update()
