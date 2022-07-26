@@ -1,5 +1,4 @@
 import time
-
 import pygame
 import math
 import copy
@@ -17,7 +16,6 @@ pygame.mouse.set_visible(False)
 bullet_image_gold = pygame.image.load("Bullet Gold.png")
 bullet_image_black = pygame.image.load("Bullet Black.png")
 
-volume = 1.0
 
 colour_theme = "Light"
 
@@ -35,7 +33,6 @@ def eventHandler():
     global playerRot
     global mode_selection
     global mode
-    global volume
     global colour_theme
     global playerPosChange
     global playerRotChange
@@ -48,6 +45,7 @@ def eventHandler():
     global player_hitbox
     global newCrosshair
     global kills
+    global difficulty
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:  # Has pygame been quit?
@@ -65,14 +63,15 @@ def eventHandler():
                 dPressed = True
             if event.key == pygame.K_g and player_gun_equipped is not None:
                 guns.append(player_gun_equipped)
-                guns[-1].setPosition((75 * math.sin(playerRot) + playerPos[0] - player_gun_equipped.getSize() / 2, 75 * math.cos(playerRot) + playerPos[1] - player_gun_equipped.getSize() / 2))
+                guns[-1].setPosition((75 * math.sin(playerRot) + playerPos[0] - player_gun_equipped.getSize() / 2,
+                                      75 * math.cos(playerRot) + playerPos[1] - player_gun_equipped.getSize() / 2))
                 player_gun_equipped = None
-            if event.key == pygame.K_DOWN and (mode == 0 or mode == 4 or mode == 5):
+            if event.key == pygame.K_DOWN and (mode == 0 or mode == 5 or mode == 4):
                 if mode_selection < 2:
                     mode_selection += 1
                 else:
                     mode_selection = 0
-            if event.key == pygame.K_UP and (mode == 0 or mode == 4 or mode == 5):
+            if event.key == pygame.K_UP and (mode == 0 or mode == 5 or mode == 4):
                 if mode_selection > 0:
                     mode_selection -= 1
                 else:
@@ -85,6 +84,10 @@ def eventHandler():
             if event.key == pygame.K_RETURN and mode == 4 and mode_selection == 2:
                 mode = 0
                 mode_selection = 0
+            if event.key == pygame.K_LEFT and mode == 4 and mode_selection == 1 and difficulty > 1:
+                difficulty -= 1
+            if event.key == pygame.K_RIGHT and mode == 4 and mode_selection == 1 and difficulty < 3:
+                difficulty += 1
             if event.key == pygame.K_RETURN and mode == 0 and mode_selection == 1:
                 mode = 4
             if event.key == pygame.K_RETURN and mode == 5 and mode_selection == 0:
@@ -108,18 +111,14 @@ def eventHandler():
 
                 mode = 1
             if event.key == pygame.K_RETURN and mode == 5 and mode_selection == 1:
-               mode = 0
-               mode_selection = 0
+                mode = 0
+                mode_selection = 0
 
             if event.key == pygame.K_LEFT and mode == 4:
-                if mode_selection == 0 and volume > 0:
-                    volume = round(volume - 0.1, 1)
-                elif mode_selection == 1 and colour_theme == "Light":
+                if mode_selection == 0 and colour_theme == "Light":
                     colour_theme = "Dark"
             if event.key == pygame.K_RIGHT and mode == 4:
-                if mode_selection == 0 and volume < 1:
-                    volume = round(volume + 0.1, 1)
-                elif mode_selection == 1 and colour_theme == "Dark":
+                if mode_selection == 0 and colour_theme == "Dark":
                     colour_theme = "Light"
 
         if event.type == pygame.KEYUP:  # Has a key been lifted?
@@ -131,6 +130,7 @@ def eventHandler():
                 sPressed = False
             if event.key == pygame.K_d:
                 dPressed = False
+
 
 # Class for gun
 class Gun:
@@ -177,6 +177,7 @@ class Gun:
     def setPosition(self, position):
         self.position = position
 
+
 # Class for pistol(inherited from Gun class)
 class Pistol(Gun):
     def __init__(self, position):
@@ -188,6 +189,7 @@ class Pistol(Gun):
         self.ammo = 10
         self.max_ammo = 10
 
+
 # Class for AR(inherited from Gun class)
 class AR(Gun):
     def __init__(self, position):
@@ -198,6 +200,7 @@ class AR(Gun):
         self.fire_rate = 1
         self.ammo = 20
         self.max_ammo = 20
+
 
 # Class for enemy
 class Enemy:
@@ -213,16 +216,18 @@ class Enemy:
         self.rot_dir = 1
         self.prevPos = []
         self.seePlayer = False
-    def shoot(self): # Enemy shoot method
+
+    def shoot(self):  # Enemy shoot method
         global_bullets.append(Bullet(copy.deepcopy(self.position), self.rotation + random.randint(-5, 5) / 50))
         self.bullets.append(global_bullets[-1])
 
     def draw(self):  # Draw enemy
         pygame.draw.circle(window, (200, 0, 0), (self.position[0], self.position[1]), 20)
         pygame.draw.circle(window, (0, 0, 0),
-                           (14 * math.sin(self.rotation) + self.position[0], 14 * math.cos(self.rotation) + self.position[1]), 2)
+                           (14 * math.sin(self.rotation) + self.position[0],
+                            14 * math.cos(self.rotation) + self.position[1]), 2)
 
-    def canSeePlayer(self): # Can the enemy see the player?
+    def canSeePlayer(self):  # Can the enemy see the player?
         self.seePlayer = True
         global obstacles
         for obstacle in obstacles:
@@ -239,16 +244,28 @@ class Enemy:
                 else:
                     rotation = 4.71 - math.atan(lineGradient)
 
-                if intersectionPoint1 >= obstacle.getVertices()[0][1] and intersectionPoint1 <= obstacle.getVertices()[1][1] and not ((intersectionPoint1 <= self.position[1] and intersectionPoint1 <= playerPos[1]) or (intersectionPoint1 >= self.position[1] and intersectionPoint1 >= playerPos[1])):
+                if intersectionPoint1 >= obstacle.getVertices()[0][1] and intersectionPoint1 <= \
+                        obstacle.getVertices()[1][1] and not (
+                        (intersectionPoint1 <= self.position[1] and intersectionPoint1 <= playerPos[1]) or (
+                        intersectionPoint1 >= self.position[1] and intersectionPoint1 >= playerPos[1])):
                     self.seePlayer = False
                     return rotation
-                if intersectionPoint2 >= obstacle.getVertices()[2][1] and intersectionPoint2 <= obstacle.getVertices()[3][1] and not ((intersectionPoint2 <= self.position[1] and intersectionPoint2 <= playerPos[1]) or (intersectionPoint2 >= self.position[1] and intersectionPoint2 >= playerPos[1])):
+                if intersectionPoint2 >= obstacle.getVertices()[2][1] and intersectionPoint2 <= \
+                        obstacle.getVertices()[3][1] and not (
+                        (intersectionPoint2 <= self.position[1] and intersectionPoint2 <= playerPos[1]) or (
+                        intersectionPoint2 >= self.position[1] and intersectionPoint2 >= playerPos[1])):
                     self.seePlayer = False
                     return rotation
-                if intersectionPoint3 >= obstacle.getVertices()[1][0] and intersectionPoint3 <= obstacle.getVertices()[3][0] and not ((intersectionPoint3 <= self.position[0] and intersectionPoint3 <= playerPos[0]) or (intersectionPoint3 >= self.position[0] and intersectionPoint3 >= playerPos[0])):
+                if intersectionPoint3 >= obstacle.getVertices()[1][0] and intersectionPoint3 <= \
+                        obstacle.getVertices()[3][0] and not (
+                        (intersectionPoint3 <= self.position[0] and intersectionPoint3 <= playerPos[0]) or (
+                        intersectionPoint3 >= self.position[0] and intersectionPoint3 >= playerPos[0])):
                     self.seePlayer = False
                     return rotation
-                if intersectionPoint4 >= obstacle.getVertices()[0][0] and intersectionPoint4 <= obstacle.getVertices()[2][0] and not ((intersectionPoint4 <= self.position[0] and intersectionPoint4 <= playerPos[0]) or (intersectionPoint4 >= self.position[0] and intersectionPoint4 >= playerPos[0])):
+                if intersectionPoint4 >= obstacle.getVertices()[0][0] and intersectionPoint4 <= \
+                        obstacle.getVertices()[2][0] and not (
+                        (intersectionPoint4 <= self.position[0] and intersectionPoint4 <= playerPos[0]) or (
+                        intersectionPoint4 >= self.position[0] and intersectionPoint4 >= playerPos[0])):
                     self.seePlayer = False
                     return rotation
                 if not (self.rotation - rotation < -5.49779 or self.rotation - rotation > -0.785398):
@@ -257,7 +274,6 @@ class Enemy:
             else:
                 return 0
         return rotation
-
 
     # Getters
     def getPosition(self):
@@ -325,15 +341,13 @@ class Bullet:
         # Init bullet variables
         self.position = position
         self.rotation = rotation
-        self.hitbox = pygame.Rect(self.position, (2, 2))
 
     def draw(self, colour):  # Draw bullet
         pygame.draw.circle(window, colour, (self.position[0], self.position[1]), 4)
 
     def isCollision(self):  # Has the obstacle
-        self.hitbox = pygame.Rect(self.position, (2, 2))
         for obstacle in obstacles:
-            if self.hitbox.colliderect(obstacle):
+            if obstacle.getRect().collidepoint(self.getPosition()[0], self.getPosition()[1]):
                 return True
         return False
 
@@ -343,9 +357,6 @@ class Bullet:
 
     def getRotation(self):
         return self.rotation
-
-    def getHitbox(self):
-        return self.hitbox
 
     # Setters
     def setPosition(self, position):
@@ -360,9 +371,11 @@ class Obstacle:
     def __init__(self, vertex, width, height):
         # Initialise obstacle variables
         self.rect = pygame.Rect(vertex, (width, height))
-        self.vertices = [vertex, [vertex[0], vertex[1] + height], [vertex[0] + width, vertex[1]], [vertex[0] + width, vertex[1] + height]] # 0---2
-                                                                                                                                           # |   |
-                                                                                                                                           # 1---3
+        self.vertices = [vertex, [vertex[0], vertex[1] + height], [vertex[0] + width, vertex[1]],
+                         [vertex[0] + width, vertex[1] + height]]  # 0---2
+        # |   |
+        # 1---3
+
     def drawObstacle(self):  # Draw an obstacle
         pygame.draw.rect(window, self.colour, self.rect)
 
@@ -402,6 +415,8 @@ global_bullets = []
 enemies = [Enemy([400, 500]), Enemy([100, 400]), Enemy([700, 250])]
 guns = [AR([100, 450]), Pistol([300, 50])]
 
+difficulty = 1
+
 map = Image.open("Map.png")
 
 # Turn map image into obstacles
@@ -415,19 +430,23 @@ for x in range(map.size[0]):
             rect_start = y
             rect_status = True
         elif pix[x, y] == (255, 255, 255, 255) and rect_status:
-            obstacles.append(Obstacle(((x * (window.get_size()[0] / map.size[0])), (rect_start * (window.get_size()[1] / map.size[1]))), window.get_size()[0] / map.size[0], math.fabs(y - rect_start) * (window.get_size()[1] / map.size[1])))
+            obstacles.append(Obstacle(
+                ((x * (window.get_size()[0] / map.size[0])), (rect_start * (window.get_size()[1] / map.size[1]))),
+                window.get_size()[0] / map.size[0], math.fabs(y - rect_start) * (window.get_size()[1] / map.size[1])))
             rect_status = False
         if y == map.size[1] - 1 and rect_status:
-            obstacles.append(Obstacle(((x * (window.get_size()[0] / map.size[0])), (rect_start * (window.get_size()[1] / map.size[1]))),window.get_size()[0] / map.size[0], math.fabs((y - rect_start) + 1) * (window.get_size()[1] / map.size[1])))
+            obstacles.append(Obstacle(
+                ((x * (window.get_size()[0] / map.size[0])), (rect_start * (window.get_size()[1] / map.size[1]))),
+                window.get_size()[0] / map.size[0],
+                math.fabs((y - rect_start) + 1) * (window.get_size()[1] / map.size[1])))
             rect_status = False
-
-
 
 wPressed = False
 aPressed = False
 sPressed = False
 dPressed = False
 prevMouse = False
+
 
 def movePlayer(delta_time):
     global playerPos
@@ -472,6 +491,7 @@ def rotatePlayer():
         playerRot = math.pi + math.atan(
             (pygame.mouse.get_pos()[0] - playerPos[0]) / (pygame.mouse.get_pos()[1] - playerPos[1]))
 
+
 def playerShoot(delta_time):
     global player_gun_equipped
     global shootReady
@@ -484,7 +504,8 @@ def playerShoot(delta_time):
     if player_gun_equipped is not None:
         if shootReady <= player_gun_equipped.getFireRate():
             shootReady += 6 * timeScale * delta_time
-        newCrosshair = pygame.transform.rotate(crosshair, (shootReady * 90) / player_gun_equipped.getFireRate())  # Rotate crosshair
+        newCrosshair = pygame.transform.rotate(crosshair, (
+                shootReady * 90) / player_gun_equipped.getFireRate())  # Rotate crosshair
         if pygame.mouse.get_pressed()[0] and not prevMouse and shootReady >= player_gun_equipped.getFireRate() and type(player_gun_equipped) == Pistol:
             # If mouse has been pressed, shoot one bullet and speed up time for a bit
             player_gun_equipped.shoot(playerPos, playerRot)
@@ -495,21 +516,28 @@ def playerShoot(delta_time):
             playerBullets.append(global_bullets[-1])
     prevMouse = pygame.mouse.get_pressed()[0]
 
+
 def updateBullet(bullet, delta_time):
     global colour_theme
     global playerPos
     global mode
     global playerBullets
-    bullet.setPosition((bullet.getPosition()[0] + math.sin(bullet.rotation) * 1200 * timeScale * delta_time, bullet.getPosition()[1] + math.cos(bullet.rotation) * 1200 * timeScale * delta_time))  # Updates position of bullet
+    bullet.setPosition((bullet.getPosition()[0] + math.sin(bullet.rotation) * 1200 * timeScale * delta_time,
+                        bullet.getPosition()[1] + math.cos(
+                            bullet.rotation) * 1200 * timeScale * delta_time))  # Updates position of bullet
     if colour_theme == "Light":
         bullet.draw((0, 0, 0))  # Draws bullet
     else:
         bullet.draw((255, 255, 255))
-    if player_hitbox.collidepoint(bullet.getPosition()[0], bullet.getPosition()[1]) and playerBullets.count(bullet) == 0:
+    if player_hitbox.collidepoint(bullet.getPosition()[0], bullet.getPosition()[1]) and playerBullets.count(
+            bullet) == 0:
         mode = 5
-    if bullet.getPosition()[0] > window.get_size()[0] or bullet.getPosition()[0] < 0 or bullet.getPosition()[1] > window.get_size()[1] or bullet.getPosition()[1] < 0 or bullet.isCollision():  # Is the bullet outside of the screen or hit something?
+    if bullet.getPosition()[0] > window.get_size()[0] or bullet.getPosition()[0] < 0 or bullet.getPosition()[1] > \
+            window.get_size()[1] or bullet.getPosition()[
+        1] < 0 or bullet.isCollision():  # Is the bullet outside of the screen or hit something?
         global_bullets.pop(global_bullets.index(bullet))  # If so, delete the bullet
         del bullet
+
 
 def updateEnemy(enemy, delta_time):
     global timeScale
@@ -521,7 +549,8 @@ def updateEnemy(enemy, delta_time):
     if enemy.getWalkAmount() == 0 and random.randint(0, 100) == 0:
         enemy.setWalkAmount(random.randint(0, 200))
     if enemy.getWalkAmount() != 0:
-        enemy.setPosition((enemy.getPosition()[0] + math.sin(enemy.getRotation()) * timeScale * delta_time * 200, enemy.getPosition()[1] + math.cos(enemy.getRotation()) * timeScale * delta_time * 200))
+        enemy.setPosition((enemy.getPosition()[0] + math.sin(enemy.getRotation()) * timeScale * delta_time * 200,
+                           enemy.getPosition()[1] + math.cos(enemy.getRotation()) * timeScale * delta_time * 200))
         enemy.setHitbox(pygame.Rect((enemy.getPosition()[0] - 10, enemy.getPosition()[1] - 10), (20, 20)))
         enemy.setWalkAmount(enemy.getWalkAmount() - 200 * timeScale * delta_time)
     if enemy.getRotAmount() > 0:
@@ -549,7 +578,8 @@ def updateEnemy(enemy, delta_time):
             else:
                 enemy.setRotDir(1)
 
-    if enemy.getPosition()[0] < 0 or enemy.getPosition()[0] > window.get_size()[0] or enemy.getPosition()[1] < 0 or enemy.getPosition()[1] > window.get_size()[1]:
+    if enemy.getPosition()[0] < 0 or enemy.getPosition()[0] > window.get_size()[0] or enemy.getPosition()[1] < 0 or \
+            enemy.getPosition()[1] > window.get_size()[1]:
         enemy.setPosition(enemy.getPrevPos())
         enemy.setRotAmount(6)
         enemy.setRotDir(1)
@@ -559,10 +589,11 @@ def updateEnemy(enemy, delta_time):
 
     # Has the enemy been shot?
     for bullet in global_bullets:
-        if enemy.hitbox.colliderect(bullet.hitbox) and enemy.bullets.count(bullet) == 0:
+        if enemy.getHitbox().collidepoint(bullet.getPosition()[0], bullet.getPosition()[1]) and enemy.bullets.count(bullet) == 0:
             enemies.pop(enemies.index(enemy))
             global_bullets.pop(global_bullets.index(bullet))
             kills += 1
+
 
 def updateGun(gun):
     global playerPos
@@ -574,6 +605,7 @@ def updateGun(gun):
         player_gun_equipped = gun
         guns.pop(guns.index(gun))
     window.blit(gun.getImage(), (gun.getPosition()[0], gun.getPosition()[1]))  # Draw gun
+
 
 couriernew_big = pygame.font.SysFont('couriernew', 40)
 couriernew_small = pygame.font.SysFont('couriernew', 25)
@@ -629,13 +661,15 @@ while running:
 
             pygame.display.update()
 
+
     if mode == 0:
         menuLoop()
+
 
     def settingsLoop():
         settings_running = True
         global mode_selection
-        global volume
+        global difficulty
         mode_selection = 0
         arrows_text = couriernew_small.render("Press '<' or '>' to adjust", False, (255, 255, 255))
         title_text = pygame.font.SysFont('couriernew', 60).render("SUPERHOT.exe", False, (255, 255, 255))
@@ -644,8 +678,13 @@ while running:
         while settings_running:
             window.fill((0, 0, 0))
             eventHandler()  # Handle events
-            sound_text = couriernew_big.render('Sound <' + str(volume) + '>', False, (255, 255, 255))
             theme_text = couriernew_big.render('Theme <' + colour_theme + '>', False, (255, 255, 255))
+            if difficulty == 1:
+                difficulty_text = couriernew_big.render('Difficulty < Easy >', False, (255, 255, 255))
+            elif difficulty == 2:
+                difficulty_text = couriernew_big.render('Difficulty < Medium >', False, (255, 255, 255))
+            elif difficulty == 3:
+                difficulty_text = couriernew_big.render('Difficulty < Hard >', False, (255, 255, 255))
             # Mode selection
             if mode != 4:
                 return
@@ -654,31 +693,33 @@ while running:
             if mode_selection == 0:
                 pygame.draw.polygon(window, (150, 0, 0), ((105, 155), (105, 195), (1175, 195), (1175, 155)))
                 window.blit(arrows_text, (760, 163))
-                dir_text2 = couriernew_small.render("Sound\\", False, (150, 150, 150))
+                dir_text2 = couriernew_small.render("Mouse Sensitivity\\", False, (150, 150, 150))
                 dir_text1 = couriernew_small.render("C:\\SUPERHOT\\Main\\Settings\\", False, (255, 255, 255))
                 window.blit(dir_text2, (500, 660))
             elif mode_selection == 1:
                 pygame.draw.polygon(window, (150, 0, 0), ((105, 200), (105, 242), (1175, 242), (1175, 200)))
                 window.blit(arrows_text, (760, 209))
-                dir_text2 = couriernew_small.render("Mouse Sensitivity\\", False, (150, 150, 150))
+                dir_text2 = couriernew_small.render("Difficulty\\", False, (150, 150, 150))
                 dir_text1 = couriernew_small.render("C:\\SUPERHOT\\Main\\Settings\\", False, (255, 255, 255))
                 window.blit(dir_text2, (500, 660))
-            else:
+            elif mode_selection == 2:
                 pygame.draw.polygon(window, (150, 0, 0), ((105, 250), (105, 290), (1175, 290), (1175, 250)))
-                window.blit(enter_text, (800, 257))
+                window.blit(enter_text, (760, 257))
                 dir_text1 = couriernew_small.render("C:\\SUPERHOT\\Main\\", False, (255, 255, 255))
 
             pygame.draw.polygon(window, (0, 0, 0), ((400, 100), (400, 105), (880, 105), (880, 100)))
-            window.blit(sound_text, (150, 150))
-            window.blit(theme_text, (150, 200))
+            window.blit(theme_text, (150, 150))
+            window.blit(difficulty_text, (150, 200))
             window.blit(exit_text, (150, 250))
             window.blit(title_text, (425, 69))
             window.blit(dir_text1, (110, 660))
 
             pygame.display.update()
 
+
     if mode == 4:
         settingsLoop()
+
 
     def deathLoop():
         global mode_selection
@@ -726,8 +767,10 @@ while running:
 
             pygame.display.update()
 
+
     if mode == 5:
         deathLoop()
+
 
     # Game loop
     def playLoop():
@@ -743,11 +786,11 @@ while running:
         global shootReady
         global newCrosshair
         global kills
+        global difficulty
 
         start_time = time.time()
 
         play_running = True
-        delta_time = 0
         prev_time = time.time()
         while play_running:
             delta_time = time.time() - prev_time
@@ -760,7 +803,7 @@ while running:
             else:
                 window.fill((0, 0, 0))
 
-            if random.randint(0, 2000) == 0 or len(enemies) == 0:
+            if random.randint(0, round(2000/difficulty)) == 0 or len(enemies) == 0:
                 for i in range(random.randint(0, 2)):
                     enemies.append(Enemy((random.randint(50, 1230), random.randint(50, 750))))
                     for obstacle in obstacles:
@@ -803,7 +846,8 @@ while running:
             if random.randint(0, 4000) == 0:
                 guns.append(AR((random.randint(50, 1230), random.randint(50, 750))))
 
-            if playerPos[0] < 0 or playerPos[0] > window.get_size() [0] or playerPos[1] < 0 or playerPos[1] > window.get_size()[1]:
+            if playerPos[0] < 0 or playerPos[0] > window.get_size()[0] or playerPos[1] < 0 or playerPos[1] > \
+                    window.get_size()[1]:
                 playerPos = playerPrevPos
 
             # Iterate through and update all the enemies
@@ -830,20 +874,35 @@ while running:
                     window.blit(bullet_image_black, (1170, 750))
                     window.blit(bullet_image_black, (1190, 750))
                     window.blit(bullet_image_black, (1210, 750))
-                ammo_text = menlo.render(str(player_gun_equipped.getAmmo()), False, (0, 0, 0))
+                if colour_theme == "Light":
+                    ammo_text = menlo.render(str(player_gun_equipped.getAmmo()), False, (0, 0, 0))
+                else:
+                    ammo_text = menlo.render(str(player_gun_equipped.getAmmo()), False, (255, 255, 255))
+                window.blit(ammo_text, (1240, 750))
+
+            if colour_theme == "Light":
                 time_alive_text = menlo.render("Time Alive: " + str(round(time.time() - start_time, 2)), False, (0, 0, 0))
                 kills_text = menlo.render("Kills: " + str(kills), False, (0, 0, 0))
-                window.blit(ammo_text, (1240, 750))
-                window.blit(time_alive_text, (850, 0))
-                window.blit(kills_text, (995, 30))
+            else:
+                time_alive_text = menlo.render("Time Alive: " + str(round(time.time() - start_time, 2)), False, (255, 255, 255))
+                kills_text = menlo.render("Kills: " + str(kills), False, (255, 255, 255))
+            window.blit(time_alive_text, (850, 0))
+            window.blit(kills_text, (995, 30))
+
             if colour_theme == "Light":
                 pygame.draw.circle(window, (0, 0, 0), (playerPos[0], playerPos[1]), 20)  # Draw player
-                pygame.draw.circle(window, (255, 255, 255), (14 * math.sin(playerRot) + playerPos[0], 14 * math.cos(playerRot) + playerPos[1]), 2)
+                pygame.draw.circle(window, (255, 255, 255),
+                                   (14 * math.sin(playerRot) + playerPos[0], 14 * math.cos(playerRot) + playerPos[1]),
+                                   2)
             else:
                 pygame.draw.circle(window, (255, 255, 255), (playerPos[0], playerPos[1]), 20)  # Draw player
-                pygame.draw.circle(window, (0, 0, 0), (14 * math.sin(playerRot) + playerPos[0], 14 * math.cos(playerRot) + playerPos[1]), 2)
-            window.blit(newCrosshair, (pygame.mouse.get_pos()[0] - crosshair.get_size()[0] / 2, pygame.mouse.get_pos()[1] - crosshair.get_size()[1] / 2))  # Draw crosshair
+                pygame.draw.circle(window, (0, 0, 0),
+                                   (14 * math.sin(playerRot) + playerPos[0], 14 * math.cos(playerRot) + playerPos[1]),
+                                   2)
+            window.blit(newCrosshair, (pygame.mouse.get_pos()[0] - crosshair.get_size()[0] / 2,
+                                       pygame.mouse.get_pos()[1] - crosshair.get_size()[1] / 2))  # Draw crosshair
             pygame.display.update()
+
 
     if mode == 1:
         playLoop()
