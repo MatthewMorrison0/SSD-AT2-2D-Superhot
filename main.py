@@ -66,8 +66,13 @@ def eventHandler():
                 guns[-1].setPosition((75 * math.sin(playerRot) + playerPos[0] - player_gun_equipped.getSize() / 2,
                                       75 * math.cos(playerRot) + playerPos[1] - player_gun_equipped.getSize() / 2))
                 player_gun_equipped = None
-            if event.key == pygame.K_DOWN and (mode == 0 or mode == 5 or mode == 4):
+            if event.key == pygame.K_DOWN and (mode == 5 or mode == 4):
                 if mode_selection < 2:
+                    mode_selection += 1
+                else:
+                    mode_selection = 0
+            if event.key == pygame.K_DOWN and mode == 0:
+                if mode_selection < 3:
                     mode_selection += 1
                 else:
                     mode_selection = 0
@@ -78,9 +83,14 @@ def eventHandler():
                     mode_selection = 2
             if event.key == pygame.K_RETURN and mode == 0 and mode_selection == 0:
                 mode = 1
-            if event.key == pygame.K_RETURN and (mode == 0 or mode == 5) and mode_selection == 2:
+            if event.key == pygame.K_RETURN and mode == 5 and mode_selection == 2:
                 running = False
                 mode = None
+            if event.key == pygame.K_RETURN and mode == 0 and mode_selection == 3:
+                running = False
+                mode = None
+            if event.key == pygame.K_RETURN and mode == 0 and mode_selection == 2:
+                mode = 6
             if event.key == pygame.K_RETURN and mode == 4 and mode_selection == 2:
                 mode = 0
                 mode_selection = 0
@@ -90,6 +100,9 @@ def eventHandler():
                 difficulty += 1
             if event.key == pygame.K_RETURN and mode == 0 and mode_selection == 1:
                 mode = 4
+            if event.key == pygame.K_ESCAPE and mode == 6:
+                mode = 0
+                mode_selection = 0
             if event.key == pygame.K_RETURN and mode == 5 and mode_selection == 0:
                 # Player data
                 playerPos = [200, 50]
@@ -230,7 +243,7 @@ class Enemy:
     def canSeePlayer(self):  # Can the enemy see the player?
         self.seePlayer = True
         global obstacles
-        for obstacle in obstacles:
+        for obstacle in obstacles: #  Loop through all obstacles
             if self.position[0] - playerPos[0] != 0 and self.position[1] - playerPos[1] != 0:
                 lineGradient = (self.position[1] - playerPos[1]) / (self.position[0] - playerPos[0])
                 lineC = self.position[1] - (self.position[0] * lineGradient)
@@ -491,7 +504,7 @@ def rotatePlayer():
         playerRot = math.pi + math.atan(
             (pygame.mouse.get_pos()[0] - playerPos[0]) / (pygame.mouse.get_pos()[1] - playerPos[1]))
 
-
+# Function to make the player shoot
 def playerShoot(delta_time):
     global player_gun_equipped
     global shootReady
@@ -517,14 +530,12 @@ def playerShoot(delta_time):
     prevMouse = pygame.mouse.get_pressed()[0]
 
 
-def updateBullet(bullet, delta_time):
+def updateBullet(bullet, delta_time):  # Updates bullet
     global colour_theme
     global playerPos
     global mode
     global playerBullets
-    bullet.setPosition((bullet.getPosition()[0] + math.sin(bullet.rotation) * 1200 * timeScale * delta_time,
-                        bullet.getPosition()[1] + math.cos(
-                            bullet.rotation) * 1200 * timeScale * delta_time))  # Updates position of bullet
+    bullet.setPosition((bullet.getPosition()[0] + math.sin(bullet.rotation) * 1200 * timeScale * delta_time, bullet.getPosition()[1] + math.cos(bullet.rotation) * 1200 * timeScale * delta_time))  # Updates position of bullet
     if colour_theme == "Light":
         bullet.draw((0, 0, 0))  # Draws bullet
     else:
@@ -532,14 +543,12 @@ def updateBullet(bullet, delta_time):
     if player_hitbox.collidepoint(bullet.getPosition()[0], bullet.getPosition()[1]) and playerBullets.count(
             bullet) == 0:
         mode = 5
-    if bullet.getPosition()[0] > window.get_size()[0] or bullet.getPosition()[0] < 0 or bullet.getPosition()[1] > \
-            window.get_size()[1] or bullet.getPosition()[
-        1] < 0 or bullet.isCollision():  # Is the bullet outside of the screen or hit something?
+    if bullet.getPosition()[0] > window.get_size()[0] or bullet.getPosition()[0] < 0 or bullet.getPosition()[1] > window.get_size()[1] or bullet.getPosition()[1] < 0 or bullet.isCollision():  # Is the bullet outside of the screen or hit something?
         global_bullets.pop(global_bullets.index(bullet))  # If so, delete the bullet
         del bullet
 
 
-def updateEnemy(enemy, delta_time):
+def updateEnemy(enemy, delta_time):  # Updates enemy
     global timeScale
     global timeDecrease
     global kills
@@ -595,7 +604,7 @@ def updateEnemy(enemy, delta_time):
             kills += 1
 
 
-def updateGun(gun):
+def updateGun(gun):  # Update bullet
     global playerPos
     global player_gun_equipped
 
@@ -620,6 +629,7 @@ while running:
         # Text for UI
         play_text = couriernew_big.render('Play', False, (255, 255, 255))
         setting_text = couriernew_big.render('Settings', False, (255, 255, 255))
+        instructions_text = couriernew_big.render('Instructions', False, (255, 255, 255))
         exit_text = couriernew_big.render('Exit', False, (255, 255, 255))
         version_text = couriernew_small.render('V0.0.5', False, (255, 255, 255))
         enter_text = couriernew_small.render("Press 'enter' to select", False, (255, 255, 255))
@@ -644,9 +654,14 @@ while running:
                 window.blit(enter_text, (800, 209))
                 dir_text2 = couriernew_small.render("Settings\\", False, (150, 150, 150))
                 window.blit(dir_text2, (365, 660))
-            else:
+            elif mode_selection == 2:
                 pygame.draw.polygon(window, (150, 0, 0), ((105, 250), (105, 290), (1175, 290), (1175, 250)))
                 window.blit(enter_text, (800, 257))
+                dir_text2 = couriernew_small.render("Instructions\\", False, (150, 150, 150))
+                window.blit(dir_text2, (365, 660))
+            else:
+                pygame.draw.polygon(window, (150, 0, 0), ((105, 300), (105, 340), (1175, 340), (1175, 300)))
+                window.blit(enter_text, (800, 305))
                 dir_text2 = couriernew_small.render("Exit.exe\\", False, (150, 150, 150))
                 window.blit(dir_text2, (365, 660))
 
@@ -654,7 +669,8 @@ while running:
             pygame.draw.polygon(window, (0, 0, 0), ((400, 100), (400, 105), (880, 105), (880, 100)))
             window.blit(play_text, (150, 150))
             window.blit(setting_text, (150, 200))
-            window.blit(exit_text, (150, 250))
+            window.blit(instructions_text, (150, 250))
+            window.blit(exit_text, (150, 300))
             window.blit(version_text, (1080, 660))
             window.blit(title_text, (425, 69))
             window.blit(dir_text1, (110, 660))
@@ -666,7 +682,7 @@ while running:
         menuLoop()
 
 
-    def settingsLoop():
+    def settingsLoop():  # Loop for settings menu
         settings_running = True
         global mode_selection
         global difficulty
@@ -721,7 +737,7 @@ while running:
         settingsLoop()
 
 
-    def deathLoop():
+    def deathLoop():  # Loop plays when player dies
         global mode_selection
         global mode
         death_running = True
@@ -770,6 +786,38 @@ while running:
 
     if mode == 5:
         deathLoop()
+
+    def instructionsLoop():
+        title_text = pygame.font.SysFont('couriernew', 60).render("SUPERHOT.exe", False, (255, 255, 255))
+        instructions_running = True
+        while instructions_running:
+            if mode != 6:
+                return
+            window.fill((0, 0, 0))
+            eventHandler()  # Handle events
+            pygame.draw.polygon(window, (255, 255, 255), ((100, 100), (100, 700), (1180, 700), (1180, 100)))
+            pygame.draw.polygon(window, (0, 0, 0), ((105, 105), (105, 695), (1175, 695), (1175, 105)))
+            pygame.draw.polygon(window, (0, 0, 0), ((400, 100), (400, 105), (880, 105), (880, 100)))
+            window.blit(title_text, (425, 69))
+            window.blit(couriernew_big.render("Use keys 'WASD' to move", False, (255, 255, 255)), (150, 150))
+            window.blit(couriernew_big.render("Use mouse to rotate player", False, (255, 255, 255)), (150, 200))
+            window.blit(couriernew_big.render("Walk over gun to pick it up", False, (255, 255, 255)), (150, 250))
+            window.blit(couriernew_big.render("Use different guns for different abilities", False, (255, 255, 255)), (150, 300))
+            window.blit(couriernew_big.render("Use left mouse button to shoot", False, (255, 255, 255)), (150, 350))
+            window.blit(couriernew_big.render("Avoid enemy bullets", False, (255, 255, 255)), (150, 400))
+            window.blit(couriernew_big.render("Change difficulty in settings", False, (255, 255, 255)), (150, 450))
+
+            window.blit(couriernew_big.render("Press ESCAPE to exit to main menu", False, (255, 255, 255)), (150, 550))
+            window.blit(couriernew_small.render("C:\\SUPERHOT\\Main\\Instructions\\", False, (255, 255, 255)), (110, 660))
+
+
+
+
+
+            pygame.display.update()
+
+    if mode == 6:
+        instructionsLoop()
 
 
     # Game loop
